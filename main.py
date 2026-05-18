@@ -271,7 +271,9 @@ class App:
         location = self.current_location
         is_video = self.current_type == "video"
         
-        upload_cb = lambda i, p=None: on_upload(i, word, location, file_path=p, root=self.root)
+        def upload_cb(i, p=None):
+            self.is_capturing = False
+            on_upload(i, word, location, file_path=p, root=self.root)
 
         def on_capture(img, x, y, bbox=None):
             if is_video and bbox:

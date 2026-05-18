@@ -141,7 +141,7 @@ class CaptureOverlay:
         if x2 - x1 <= 5 or y2 - y1 <= 5:
             # Too small — treat as cancel for video, ignore for screenshot
             if self.is_video:
-                self.window.destroy()
+                self._dismiss_cancel()
             return
 
         # Map selection coordinates to absolute virtual screen coordinates
