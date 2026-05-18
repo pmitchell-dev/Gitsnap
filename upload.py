@@ -9,7 +9,16 @@ import uuid
 import requests
 from config import load_config, get_location, DEBUG_LOG_FILE
 
-def upload_image(img, word=None, location_name=None, file_path=None):
+def generate_default_filename(file_path=None, word=None):
+    ext = "mp4" if file_path else "png"
+    prefix = "video" if file_path else "screenshot"
+    now_str = datetime.now().strftime('%Y-%m-%d_%I-%M-%S_%p')
+    filename_base = f"{prefix}_{now_str}_{uuid.uuid4().hex[:6]}"
+    if word:
+        return f"{filename_base}_{word}.{ext}"
+    return f"{filename_base}.{ext}"
+
+def upload_image(img, word=None, location_name=None, file_path=None, custom_filename=None):
     """
     Uploads an image or video file to the specified GitHub repository.
     """
@@ -42,15 +51,11 @@ def upload_image(img, word=None, location_name=None, file_path=None):
         # Base64 encode for GitHub API
         b64_content = base64.b64encode(img_bytes).decode('utf-8')
 
-        # Generate filename
-        ext = "mp4" if file_path else "png"
-        prefix = "video" if file_path else "screenshot"
-        now_str = datetime.now().strftime('%Y-%m-%d_%I-%M-%S_%p')
-        filename_base = f"{prefix}_{now_str}_{uuid.uuid4().hex[:6]}"
-        if word:
-            filename = f"{filename_base}_{word}.{ext}"
+        # Determine filename
+        if custom_filename:
+            filename = custom_filename
         else:
-            filename = f"{filename_base}.{ext}"
+            filename = generate_default_filename(file_path, word)
 
         path = f"{folder}/{filename}" if folder else filename
 

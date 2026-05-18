@@ -7,6 +7,7 @@ import sys
 import datetime
 import threading
 import tkinter as tk
+from tkinter import simpledialog
 from PIL import Image, ImageDraw, ImageTk
 import pystray
 from pynput import keyboard
@@ -14,7 +15,7 @@ from win11toast import toast
 
 from capture import CaptureOverlay, set_dpi_awareness
 from overlay import show_action_overlay
-from upload import upload_image
+from upload import upload_image, generate_default_filename
 from notify import copy_image_to_clipboard, copy_text_to_clipboard_and_notify
 from settings import show_settings_window
 from video import VideoRecorder
@@ -90,12 +91,27 @@ def on_copy(img):
     threading.Thread(target=copy_image_to_clipboard, args=(img,), daemon=True).start()
 
 
-def on_upload(img, word=None, location_name=None, file_path=None):
+def on_upload(img, word=None, location_name=None, file_path=None, root=None):
     """
     Handles uploading an image to GitHub.
     """
+    default_filename = generate_default_filename(file_path, word)
+    
+    custom_filename = simpledialog.askstring(
+        "Upload to GitHub", 
+        "Amend screenshot name before uploading:", 
+        initialvalue=default_filename,
+        parent=root
+    )
+    
+    if custom_filename is None:
+        return  # User cancelled
+        
+    if not custom_filename.strip():
+        custom_filename = default_filename
+
     def process():
-        link, error = upload_image(img, word, location_name, file_path)
+        link, error = upload_image(img, word, location_name, file_path, custom_filename)
         if link:
             copy_text_to_clipboard_and_notify(link)
         else:
@@ -255,7 +271,7 @@ class App:
         location = self.current_location
         is_video = self.current_type == "video"
         
-        upload_cb = lambda i, p=None: on_upload(i, word, location, file_path=p)
+        upload_cb = lambda i, p=None: on_upload(i, word, location, file_path=p, root=self.root)
 
         def on_capture(img, x, y, bbox=None):
             if is_video and bbox:
@@ -312,7 +328,7 @@ class App:
             location = getattr(self, "current_location_save", None)
 
             show_action_overlay(self.root, None, 0, 0, on_copy,
-                                lambda i, p=None: on_upload(i, word, location, file_path=p),
+                                lambda i, p=None: on_upload(i, word, location, file_path=p, root=self.root),
                                 is_video=True, video_path=video_path)
 
     def quit(self, icon, _item):
